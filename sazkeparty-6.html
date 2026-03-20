@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hrdlisss</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green: #1D9E75; --green-light: #E1F5EE; --green-dark: #085041;
+    --red: #D85A30; --red-light: #FAECE7; --red-dark: #4A1B0C;
+    --bg: #f7f7f5; --surface: #ffffff; --border: #e5e5e0;
+    --text: #1a1a18; --muted: #888780; --radius: 12px; --radius-sm: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a18; --surface: #242422; --border: #333330;
+      --text: #f0ede8; --muted: #888780;
+      --green-light: #04342C; --green-dark: #9FE1CB;
+      --red-light: #4A1B0C; --red-dark: #F5C4B3;
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+  .logo { font-size: 18px; font-weight: 600; color: var(--text); }
+  .logo span { color: var(--green); }
+  .user-chip { display: flex; align-items: center; gap: 8px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+  .user-info { line-height: 1.2; }
+  .user-name { font-size: 13px; font-weight: 500; }
+  .user-pts { font-size: 11px; color: var(--muted); }
+  .logout-btn { font-size: 12px; color: var(--muted); background: none; border: 1px solid var(--border); border-radius: 100px; padding: 4px 10px; cursor: pointer; }
+
+  /* TABS */
+  .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .tab { flex: 1; padding: 12px 8px; font-size: 13px; font-weight: 500; text-align: center; cursor: pointer; border: none; background: none; color: var(--muted); border-bottom: 2px solid transparent; transition: all .2s; }
+  .tab.active { color: var(--green); border-bottom-color: var(--green); }
+
+  /* CONTENT */
+  .content { max-width: 560px; margin: 0 auto; padding: 16px; }
+
+  /* CARDS */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border-left-width: 4px; }
+  .card-open { border-left-color: #1D9E75; }
+  .card-expired { border-left-color: #E9A23B; }
+  .card-resolved { border-left-color: #b0b0a8; }
+  .card-title { font-size: 15px; font-weight: 500; line-height: 1.4; margin-bottom: 4px; }
+  .card-meta { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+
+  /* STATUS BADGE */
+  .badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 100px; }
+  .badge-open { background: var(--green-light); color: var(--green-dark); }
+  .badge-closed { background: var(--border); color: var(--muted); }
+
+  /* VOTE BUTTONS */
+  .vote-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .vote-btn { flex: 1; padding: 9px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: none; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; }
+  .vote-btn.yes { color: var(--green); }
+  .vote-btn.no { color: var(--red); }
+  .vote-btn.voted-yes { background: var(--green-light); border-color: var(--green); color: var(--green-dark); }
+  .vote-btn.voted-no { background: var(--red-light); border-color: var(--red); color: var(--red-dark); }
+  .vote-btn:disabled { opacity: .45; cursor: default; }
+
+  /* PROGRESS BAR */
+  .bar-wrap { height: 6px; background: var(--bg); border-radius: 100px; overflow: hidden; margin-bottom: 8px; }
+  .bar-yes { height: 100%; background: var(--green); border-radius: 100px; transition: width .4s; }
+  .vote-counts { font-size: 12px; color: var(--muted); display: flex; gap: 10px; margin-bottom: 10px; }
+  .vote-counts .yes-c { color: var(--green); }
+  .vote-counts .no-c { color: var(--red); }
+
+  /* RESOLVE */
+  .resolve-section { border-top: 1px solid var(--border); padding-top: 10px; margin-top: 4px; }
+  .resolve-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  .resolve-row { display: flex; gap: 6px; }
+  .resolve-btn { flex: 1; padding: 7px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: none; font-size: 12px; font-weight: 500; cursor: pointer; transition: background .15s; }
+  .resolve-btn.yes { color: var(--green); }
+  .resolve-btn.no { color: var(--red); }
+  .resolve-btn:hover { background: var(--bg); }
+
+  /* RESULT */
+  .result-box { background: var(--green-light); border-radius: var(--radius-sm); padding: 10px 12px; margin-top: 8px; }
+  .result-outcome { font-size: 13px; font-weight: 600; color: var(--green-dark); margin-bottom: 2px; }
+  .result-winners { font-size: 12px; color: var(--green-dark); }
+
+  /* FORM */
+  .form-label { font-size: 12px; color: var(--muted); margin-bottom: 5px; display: block; }
+  .form-input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-size: 14px; font-family: inherit; margin-bottom: 12px; }
+  .form-input:focus { outline: none; border-color: var(--green); }
+  .submit-btn { width: 100%; padding: 11px; border-radius: var(--radius-sm); border: none; background: var(--green); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+  .submit-btn:hover { opacity: .9; }
+  .submit-btn:active { transform: scale(.99); }
+
+  /* LEADERBOARD */
+  .lb-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-rank { font-size: 16px; width: 28px; text-align: center; }
+  .lb-name { flex: 1; font-size: 14px; font-weight: 500; }
+  .lb-right { text-align: right; }
+  .lb-pts { font-size: 15px; font-weight: 600; color: var(--green); }
+  .lb-acc { font-size: 11px; color: var(--muted); }
+
+  /* LOGIN */
+  .login-screen { max-width: 380px; margin: 60px auto; padding: 0 20px; }
+  .login-title { font-size: 24px; font-weight: 600; margin-bottom: 6px; }
+  .login-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+  .known-users { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .known-chip { padding: 7px 16px; border-radius: 100px; border: 1px solid var(--border); background: none; font-size: 13px; cursor: pointer; color: var(--text); transition: all .15s; }
+  .known-chip:hover { border-color: var(--green); color: var(--green); }
+  .divider { text-align: center; font-size: 12px; color: var(--muted); margin: 14px 0; }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: 100px; font-size: 13px; font-weight: 500; opacity: 0; transition: all .3s; z-index: 100; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* COMMENTS */
+  .comments-section { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 10px; }
+  .comments-toggle { background: none; border: none; font-size: 12px; color: var(--muted); cursor: pointer; padding: 0; margin-bottom: 8px; }
+  .comments-toggle:hover { color: var(--text); }
+  .comment-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .comment-row { display: flex; gap: 8px; align-items: flex-start; }
+  .comment-bubble { background: var(--bg); border-radius: var(--radius-sm); padding: 7px 10px; flex: 1; }
+  .comment-author { font-size: 11px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .comment-text { font-size: 13px; color: var(--text); line-height: 1.4; }
+  .comment-time { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .comment-input-row { display: flex; gap: 8px; align-items: center; }
+  .comment-input { flex: 1; padding: 8px 10px; border: 1px solid var(--border); border-radius: 100px; background: var(--bg); color: var(--text); font-size: 13px; font-family: inherit; }
+  .comment-input:focus { outline: none; border-color: var(--green); }
+  .comment-send { padding: 8px 14px; border-radius: 100px; border: none; background: var(--green); color: #fff; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+  .comment-send:hover { opacity: .9; }
+
+  /* LOADING */
+  .loading { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .spinner { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ====== FIREBASE CONFIG ====== -->
+<!--
+  NÁVOD K NASTAVENÍ:
+  1. Jdi na https://console.firebase.google.com
+  2. Vytvoř nový projekt (zdarma)
+  3. Klikni "Add app" > Web
+  4. Zkopíruj firebaseConfig a vlož sem níže
+  5. V Firebase konzoli jdi na Firestore Database > Create database > Start in test mode
+  6. Hotovo! Sdílej soubor nebo ho nahraj na GitHub Pages / Netlify
+-->
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, getDoc, setDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ==========================================
+// VLOŽ SEM SVŮJ FIREBASE CONFIG:
+const firebaseConfig = {
+  apiKey: "AIzaSyAdlMtX2UdiL_Swji8WDGZoHUvn_uSHdFM",
+  authDomain: "hrdlisss.firebaseapp.com",
+  databaseURL: "https://hrdlisss-default-rtdb.firebaseio.com",
+  projectId: "hrdlisss",
+  storageBucket: "hrdlisss.firebasestorage.app",
+  messagingSenderId: "996352248497",
+  appId: "1:996352248497:web:8c81805cab855385763090",
+  measurementId: "G-J3537E4EC5"
+};
+// ==========================================
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ---- STATE ----
+let currentUser = localStorage.getItem('sazkeparty_user') || null;
+let bets = [];
+let users = {};
+
+// ---- COLORS ----
+const COLORS = [
+  ['#dbeafe','#1e40af'],['#dcfce7','#166534'],['#fce7f3','#9d174d'],
+  ['#fef3c7','#92400e'],['#ede9fe','#4c1d95'],['#fee2e2','#991b1b'],
+];
+function getColor(name) {
+  const i = [...name].reduce((a,c)=>a+c.charCodeAt(0),0) % COLORS.length;
+  return COLORS[i];
+}
+function initials(name) { return name.slice(0,2).toUpperCase(); }
+
+// ---- RENDER HELPERS ----
+function $(id) { return document.getElementById(id); }
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.classList.add('show'), 10);
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 2800);
+}
+
+// ---- MAIN RENDER ----
+function renderApp() {
+  document.body.innerHTML = '';
+  if (!currentUser) { renderLogin(); return; }
+  renderMain();
+}
+
+// ---- LOGIN ----
+function renderLogin() {
+  const knownNames = Object.keys(users);
+  document.body.innerHTML = `
+    <div class="login-screen">
+      <div style="font-size:28px;margin-bottom:12px;">🎯</div>
+      <div class="login-title">Hrdli<span style="color:var(--green)">sss</span></div>
+      <div class="login-sub">Kdo jsi? Vyber nebo zadej své jméno.</div>
+      ${knownNames.length ? `<div class="known-users">${knownNames.map(n=>`<button class="known-chip" onclick="window._login('${n}')">${n}</button>`).join('')}</div><div class="divider">— nebo nové jméno —</div>` : ''}
+      <label class="form-label">Tvoje jméno</label>
+      <input class="form-input" id="name-in" placeholder="Např. Honza" maxlength="20" onkeydown="if(event.key==='Enter')window._login()" />
+      <button class="submit-btn" onclick="window._login()">Vstoupit</button>
+    </div>
+    <div id="toast-area"></div>
+  `;
+  setTimeout(() => $('name-in') && $('name-in').focus(), 100);
+}
+
+window._login = async function(preset) {
+  const name = preset || ($('name-in') && $('name-in').value.trim());
+  if (!name) { toast('Zadej jméno'); return; }
+  currentUser = name;
+  localStorage.setItem('sazkeparty_user', name);
+  if (!users[name]) {
+    await setDoc(doc(db, 'users', name), { name, points: 0, correct: 0, total: 0 }, { merge: true });
+  }
+  renderApp();
+};
+
+// ---- MAIN APP ----
+let activeTab = 'bets';
+
+function renderMain() {
+  const u = users[currentUser] || { points: 0 };
+  const [bg, fg] = getColor(currentUser);
+  document.body.innerHTML = `
+    <div class="header">
+      <div class="logo">Hrdli<span>sss</span></div>
+      <div class="user-chip">
+        <div class="avatar" style="background:${bg};color:${fg}">${initials(currentUser)}</div>
+        <div class="user-info">
+          <div class="user-name">${currentUser}</div>
+          <div class="user-pts">${u.points || 0} bodů</div>
+        </div>
+        <button class="logout-btn" onclick="window._logout()">Změnit</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab ${activeTab==='bets'?'active':''}" onclick="window._tab('bets')">Sázky</button>
+      <button class="tab ${activeTab==='add'?'active':''}" onclick="window._tab('add')">+ Přidat</button>
+      <button class="tab ${activeTab==='lb'?'active':''}" onclick="window._tab('lb')">Žebříček</button>
+    </div>
+    <div class="content" id="panel"></div>
+  `;
+  renderPanel();
+}
+
+window._logout = function() {
+  currentUser = null;
+  localStorage.removeItem('sazkeparty_user');
+  renderApp();
+};
+
+window._tab = function(t) {
+  activeTab = t;
+  renderMain();
+};
+
+function renderPanel() {
+  const panel = $('panel');
+  if (!panel) return;
+  if (activeTab === 'bets') renderBets(panel);
+  else if (activeTab === 'add') renderAdd(panel);
+  else renderLB(panel);
+}
+
+// ---- BETS ----
+function renderBets(panel) {
+  if (!bets.length) { panel.innerHTML = '<div class="empty">Zatím žádné sázky.<br>Přidej první přes + Přidat!</div>'; return; }
+  panel.innerHTML = [...bets].reverse().map(bet => {
+    const votes = bet.votes || {};
+    const yesV = Object.values(votes).filter(v=>v==='yes').length;
+    const noV = Object.values(votes).filter(v=>v==='no').length;
+    const total = yesV + noV;
+    const yesPct = total ? Math.round(yesV / total * 100) : 50;
+    const myVote = votes[currentUser];
+    const isAuthor = bet.author === currentUser;
+    const resolved = bet.resolved != null;
+    const now = new Date();
+    const deadlineExpired = bet.deadline ? new Date(bet.deadline) < now : false;
+    const votingClosed = resolved || deadlineExpired;
+
+    let deadlineLabel = '';
+    if (bet.deadline && !resolved) {
+      const dl = new Date(bet.deadline);
+      const dlStr = dl.toLocaleDateString('cs-CZ', {day:'numeric', month:'numeric'}) + ' ' + dl.toLocaleTimeString('cs-CZ', {hour:'2-digit', minute:'2-digit'});
+      deadlineLabel = deadlineExpired
+        ? `<span style="color:var(--red);font-size:11px">⏰ Skončilo ${dlStr}</span>`
+        : `<span style="color:var(--muted);font-size:11px">⏰ Do ${dlStr}</span>`;
+    }
+
+    let body = '';
+    if (votingClosed && !resolved) {
+      body = `
+        <div class="vote-counts"><span class="yes-c">ANO: ${yesV}</span><span class="no-c">NE: ${noV}</span></div>
+        <div class="bar-wrap"><div class="bar-yes" style="width:${yesPct}%"></div></div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Hlasování skončilo — čeká se na výsledek</div>
+        ${isAuthor ? `<div class="resolve-section">
+          <div class="resolve-label">Uzavřít — jaký byl skutečný výsledek?</div>
+          <div class="resolve-row">
+            <button class="resolve-btn yes" onclick="window._resolve('${bet.id}','yes')">Bylo ANO</button>
+            <button class="resolve-btn no" onclick="window._resolve('${bet.id}','no')">Bylo NE</button>
+          </div>
+        </div>` : ''}`;
+    } else if (resolved) {
+      const winners = Object.entries(votes).filter(([,v])=>v===bet.resolved).map(([u])=>u);
+      body = `
+        <div class="vote-counts">
+          <span class="yes-c">ANO: ${yesV}</span>
+          <span class="no-c">NE: ${noV}</span>
+        </div>
+        <div class="bar-wrap"><div class="bar-yes" style="width:${yesPct}%"></div></div>
+        <div class="result-box">
+          <div class="result-outcome">Výsledek: ${bet.resolved === 'yes' ? 'ANO ✓' : 'NE ✓'}</div>
+          <div class="result-winners">Správně: ${winners.length ? winners.join(', ') : 'nikdo'} (+10 bodů)</div>
+        </div>`;
+    } else {
+      body = `
+        <div class="vote-row">
+          <button class="vote-btn ${myVote==='yes'?'voted-yes':'yes'}" ${myVote?'disabled':''} onclick="window._vote('${bet.id}','yes')">
+            ${myVote==='yes'?'✓ ':''}ANO (${yesV})
+          </button>
+          <button class="vote-btn ${myVote==='no'?'voted-no':'no'}" ${myVote?'disabled':''} onclick="window._vote('${bet.id}','no')">
+            ${myVote==='no'?'✓ ':''}NE (${noV})
+          </button>
+        </div>
+        <div class="bar-wrap"><div class="bar-yes" style="width:${yesPct}%"></div></div>
+        <div class="vote-counts">
+          <span class="yes-c">ANO: ${yesV}</span>
+          <span class="no-c">NE: ${noV}</span>
+          ${isAuthor ? '<span style="margin-left:auto;font-style:italic;color:var(--muted)">tvoje otázka</span>' : ''}
+        </div>
+        ${isAuthor ? `
+        <div class="resolve-section">
+          <div class="resolve-label">Uzavřít — jaký byl skutečný výsledek?</div>
+          <div class="resolve-row">
+            <button class="resolve-btn yes" onclick="window._resolve('${bet.id}','yes')">Bylo ANO</button>
+            <button class="resolve-btn no" onclick="window._resolve('${bet.id}','no')">Bylo NE</button>
+          </div>
+        </div>` : ''}`;
+    }
+
+    const [bg,fg] = getColor(bet.author);
+    const comments = bet.comments || [];
+    const commentsHtml = comments.map(c => {
+      const [cbg,cfg] = getColor(c.author);
+      return `<div class="comment-row">
+        <div class="avatar" style="width:24px;height:24px;font-size:10px;flex-shrink:0;background:${cbg};color:${cfg}">${initials(c.author)}</div>
+        <div class="comment-bubble">
+          <div class="comment-author">${escHtml(c.author)}</div>
+          <div class="comment-text">${escHtml(c.text)}</div>
+          <div class="comment-time">${c.time}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `
+      <div class="card ${resolved ? 'card-resolved' : deadlineExpired ? 'card-expired' : 'card-open'}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">
+          <div class="card-title">${escHtml(bet.question)}</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            <span class="badge ${resolved?'badge-closed':'badge-open'}">${resolved?'Uzavřeno':'Otevřeno'}</span>
+            ${isAuthor ? `<button onclick="window._deleteBet('${bet.id}')" style="background:none;border:none;cursor:pointer;font-size:15px;color:var(--muted);padding:0;line-height:1;" title="Smazat sázku">🗑</button>` : ''}
+          </div>
+        </div>
+        <div class="card-meta" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <div class="avatar" style="width:18px;height:18px;font-size:9px;background:${bg};color:${fg}">${initials(bet.author)}</div>
+          ${escHtml(bet.author)} · ${bet.date}
+          ${deadlineLabel ? '· ' + deadlineLabel : ''}
+        </div>
+        ${body}
+        <div class="comments-section">
+          <button class="comments-toggle" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.textContent=this.textContent.startsWith('▸')?'▾ Skrýt komentáře':'▸ Komentáře (${comments.length})'">▸ Komentáře (${comments.length})</button>
+          <div style="display:none">
+            <div class="comment-list">${commentsHtml}</div>
+            <div class="comment-input-row">
+              <input class="comment-input" id="ci-${bet.id}" placeholder="Napiš komentář…" maxlength="200" onkeydown="if(event.key==='Enter')window._comment('${bet.id}')" />
+              <button class="comment-send" onclick="window._comment('${bet.id}')">Odeslat</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+window._vote = async function(id, side) {
+  const bet = bets.find(b=>b.id===id);
+  if (!bet || bet.resolved != null) return;
+  if (bet.votes && bet.votes[currentUser]) return;
+  if (bet.author === currentUser) { }
+  await updateDoc(doc(db,'bets',id), { [`votes.${currentUser}`]: side });
+};
+
+window._deleteBet = async function(id) {
+  if (!confirm('Opravdu chceš smazat tuto sázku?')) return;
+  await deleteDoc(doc(db,'bets',id));
+  toast('Sázka smazána');
+};
+
+
+window._resolve = async function(id, outcome) {
+  const bet = bets.find(b=>b.id===id);
+  if (!bet || bet.author !== currentUser) return;
+  await updateDoc(doc(db,'bets',id), { resolved: outcome });
+  const votes = bet.votes || {};
+  const winners = Object.entries(votes).filter(([,v])=>v===outcome).map(([u])=>u);
+  const allVoters = Object.keys(votes);
+  for (const name of winners) {
+    const ref = doc(db,'users',name);
+    const snap = await getDoc(ref);
+    const d = snap.exists() ? snap.data() : {points:0,correct:0,total:0};
+    await setDoc(ref, { points:(d.points||0)+10, correct:(d.correct||0)+1, total:(d.total||0)+1 }, {merge:true});
+  }
+  for (const name of allVoters.filter(n=>!winners.includes(n))) {
+    const ref = doc(db,'users',name);
+    const snap = await getDoc(ref);
+    const d = snap.exists() ? snap.data() : {points:0,correct:0,total:0};
+    await setDoc(ref, { total:(d.total||0)+1 }, {merge:true});
+  }
+  toast(`Uzavřeno! ${winners.length} hráčů získalo +10 bodů 🎉`);
+};
+
+window._comment = async function(id) {
+  const input = $('ci-' + id);
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  const now = new Date();
+  const time = now.toLocaleTimeString('cs-CZ', {hour:'2-digit', minute:'2-digit'}) + ' · ' + now.toLocaleDateString('cs-CZ', {day:'numeric', month:'numeric'});
+  await updateDoc(doc(db,'bets',id), {
+    comments: arrayUnion({ author: currentUser, text, time })
+  });
+  input.value = '';
+};
+
+// ---- ADD ----
+function renderAdd(panel) {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  const minVal = now.toISOString().slice(0,16);
+  panel.innerHTML = `
+    <div class="card">
+      <div style="font-size:15px;font-weight:500;margin-bottom:14px">Nová sázka</div>
+      <label class="form-label">Otázka (ostatní hlasují ANO nebo NE)</label>
+      <input class="form-input" id="q-in" placeholder="Např. Dorazí Tomáš včas?" maxlength="150" />
+      <label class="form-label">Hlasování do — datum a čas (nepovinné)</label>
+      <input class="form-input" id="deadline-in" type="datetime-local" min="${minVal}" />
+      <button class="submit-btn" onclick="window._addBet()">Přidat sázku</button>
+    </div>`;
+  setTimeout(() => $('q-in') && $('q-in').focus(), 100);
+}
+
+window._addBet = async function() {
+  const q = ($('q-in') && $('q-in').value.trim());
+  if (!q) { toast('Napiš otázku'); return; }
+  const deadlineVal = $('deadline-in') && $('deadline-in').value;
+  const deadline = deadlineVal || null;
+  const now = new Date();
+  const date = now.toLocaleDateString('cs-CZ',{day:'numeric',month:'numeric'});
+  await addDoc(collection(db,'bets'), { question: q, author: currentUser, votes: {}, resolved: null, date, ts: Date.now(), deadline });
+  toast('Sázka přidána!');
+  activeTab = 'bets';
+  renderMain();
+};
+
+// ---- LEADERBOARD ----
+function renderLB(panel) {
+  const sorted = Object.values(users).sort((a,b)=>b.points-a.points);
+  if (!sorted.length) { panel.innerHTML='<div class="empty">Zatím nikdo nehrál.</div>'; return; }
+  const medals = ['🥇','🥈','🥉'];
+  panel.innerHTML = `<div class="card">${sorted.map((u,i)=>{
+    const [bg,fg] = getColor(u.name);
+    const acc = u.total ? Math.round(u.correct/u.total*100) : 0;
+    return `<div class="lb-row">
+      <div class="lb-rank">${medals[i]||i+1+'.'}</div>
+      <div class="avatar" style="background:${bg};color:${fg}">${initials(u.name)}</div>
+      <div class="lb-name">${escHtml(u.name)}</div>
+      <div class="lb-right">
+        <div class="lb-pts">${u.points} b</div>
+        <div class="lb-acc">${u.correct}/${u.total} · ${acc}%</div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ---- UTILS ----
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ---- FIREBASE LISTENERS ----
+document.body.innerHTML = `<div class="loading"><div class="spinner"></div>Načítám…</div>`;
+
+onSnapshot(query(collection(db,'bets'), orderBy('ts')), snap => {
+  bets = snap.docs.map(d=>({id:d.id,...d.data()}));
+  if (currentUser) renderPanel();
+});
+
+onSnapshot(collection(db,'users'), snap => {
+  users = {};
+  snap.docs.forEach(d => { users[d.id] = d.data(); });
+  renderApp();
+});
+
+</script>
+</body>
+</html>
